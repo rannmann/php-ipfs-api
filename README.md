@@ -5,13 +5,6 @@ IPFS API wrapper library in PHP
 
 > A client library for the IPFS API.
 
-Good news everyone! [S3r3nity](http://www.s3r3nity.com/) is sponsoring the development of this library.
-They will be using it inside one of their (unannounced) projects and its maintainer is hired
-to implement all the missing api calls (including the new file api) before the end of September 2016.
-
-**Warning:** Changes will be made from user's suggestions and this warning will be removed when everything is stable.
-First stable release is scheduled for the end of September 2016.
-
 # Usage
 
 ## Installing 
@@ -20,7 +13,7 @@ This library requires the cURL module:
 
 ```bash
 $ sudo apt-get install php5-curl
-$ composer require cloutier/php-ipfs-api
+$ composer require rannmann/php-ipfs-api
 $ composer install
 ```
 
