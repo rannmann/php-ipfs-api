@@ -28,10 +28,10 @@ class IPFS
     /**
      * IPFS constructor.
      * @param string $ip
-     * @param string $port
-     * @param string $apiPort
+     * @param int $port
+     * @param int $apiPort
      */
-    function __construct($ip = "localhost", $port = "8080", $apiPort = "5001")
+    function __construct($ip = "localhost", $port = 8080, $apiPort = 5001)
     {
         $this->gatewayIP = $ip;
         $this->gatewayPort = $port;
