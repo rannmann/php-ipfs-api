@@ -6,124 +6,204 @@
 
 namespace rannmann\PhpIpfsApi;
 
-class IPFS {
-	private $gatewayIP;
-	private $gatewayPort;
-	private $gatewayApiPort;
+/**
+ * Class IPFS
+ * @package rannmann\PhpIpfsApi
+ */
+class IPFS
+{
+    /**
+     * @var string
+     */
+    private $gatewayIP;
+    /**
+     * @var string
+     */
+    private $gatewayPort;
+    /**
+     * @var string
+     */
+    private $gatewayApiPort;
 
-	function __construct($ip = "localhost", $port = "8080", $apiPort = "5001") {
-		$this->gatewayIP      = $ip;
-		$this->gatewayPort    = $port;
-		$this->gatewayApiPort = $apiPort;
-	}
+    /**
+     * IPFS constructor.
+     * @param string $ip
+     * @param string $port
+     * @param string $apiPort
+     */
+    function __construct($ip = "localhost", $port = "8080", $apiPort = "5001")
+    {
+        $this->gatewayIP = $ip;
+        $this->gatewayPort = $port;
+        $this->gatewayApiPort = $apiPort;
+    }
 
-	public function cat ($hash) {
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayPort;
-		return $this->curl("http://$ip:$port/ipfs/$hash"); 
+    /**
+     * Retrieves the contents of a single hash
+     *
+     * @param string $hash
+     * @return bool|string
+     */
+    public function cat($hash)
+    {
+        return $this->curl($this->getIpfsUrl() . "/$hash");
+    }
 
-	}
+    /**
+     * Adds content to IPFS.
+     *
+     * @param $content
+     * @return mixed
+     */
+    public function add($content)
+    {
+        $req = $this->curl($this->getApiUrl() . "/add?stream-channels=true", $content);
+        if ($req !== false) {
+            $req = json_decode($req, true);
+        }
 
-	public function add ($content) {
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+        return $req['Hash'];
+    }
 
-		$req = $this->curl("http://$ip:$port/api/v0/add?stream-channels=true", $content);
-		$req = json_decode($req, TRUE);
+    /**
+     * Returns the node structure of a hash
+     *
+     * @param string $hash
+     * @return mixed False on failure
+     */
+    public function ls($hash)
+    {
+        $req = $this->curl($this->getApiUrl() . "/ls/$hash");
 
-		return $req['Hash'];
-	}
+        if ($req !== false) {
+            $req = json_decode($req, true);
+            return $req['Objects'][0]['Links'];
+        }
 
-	public function ls ($hash) {
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+        return false;
+    }
 
-		$response = $this->curl("http://$ip:$port/api/v0/ls/$hash");
+    /**
+     * @param string $hash
+     * @return mixed
+     */
+    public function size($hash)
+    {
+        $req = $this->curl($this->getApiUrl() . "/object/stat/$hash");
+        if ($req !== false) {
+            $req = json_decode($req, true);
+            return $req['CumulativeSize'];
+        }
 
-		$data = json_decode($response, TRUE);
+        return false;
+    }
 
-		return $data['Objects'][0]['Links'];
-	}
+    /**
+     * Pin a hash
+     *
+     * @param string $hash
+     * @return mixed
+     */
+    public function pinAdd($hash)
+    {
+        $req = $this->curl($this->getApiUrl() . "/pin/add/$hash");
+        if ($req !== false) {
+            $req = json_decode($req, true);
+        }
 
-	public function size ($hash) {
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+        return $req;
+    }
 
-		$response = $this->curl("http://$ip:$port/api/v0/object/stat/$hash");
-		$data = json_decode($response, TRUE);
+    /**
+     * Unpin a hash
+     *
+     * @param string $hash
+     * @return mixed
+     */
+    public function pinRm($hash)
+    {
+        $req = $this->curl($this->getApiUrl() . "/pin/rm/$hash");
+        if ($req !== false) {
+            $req = json_decode($req, true);
+        }
 
-		return $data['CumulativeSize'];
-	}
+        return $req;
+    }
 
-	public function pinAdd ($hash) {
-		
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+    /**
+     * @return mixed
+     */
+    public function version()
+    {
+        $req = $this->curl($this->getApiUrl() . "/version");
+        if ($req !== false) {
+            $req = json_decode($req, true);
+            return $req['Version'];
+        }
 
-		$response = $this->curl("http://$ip:$port/api/v0/pin/add/$hash");
-		$data = json_decode($response, TRUE);
+        return false;
+    }
 
-		return $data;
-	}
-	
-	public function pinRm ($hash) {
-		
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+    /**
+     * @return mixed
+     */
+    public function id()
+    {
+        $req = $this->curl($this->getApiUrl() . "/id");
+        if ($req !== false) {
+            $req = json_decode($req, true);
+            return $req['Version'];
+        }
+        return $req;
+    }
 
-		$response = $this->curl("http://$ip:$port/api/v0/pin/rm/$hash");
-		$data = json_decode($response, TRUE);
+    /**
+     * Gets the base url for all API calls, no trailing slash.
+     *
+     * @return string
+     */
+    private function getApiUrl()
+    {
+        return "http://{$this->gatewayIP}:{$this->gatewayPort}/api/v0";
+    }
 
-		return $data;
-	}
-	
-	public function version () {
-		
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+    /**
+     * Gets the base url for all IPFS calls, no trailing slash.
+     *
+     * @return string
+     */
+    private function getIpfsUrl()
+    {
+        return "http://{$this->gatewayIP}:{$this->gatewayApiPort}/ipfs";
+    }
 
-		$response = $this->curl("http://$ip:$port/api/v0/version");
-		$data = json_decode($response, TRUE);
+    /**
+     * @param $url
+     * @param string $data
+     * @return false|string False on failure
+     */
+    private function curl($url, $data = "")
+    {
+        $ch = curl_init();
 
-		return $data['Version'];
-	}
-	
-	public function id () {
-		
-		$ip = $this->gatewayIP;
-		$port = $this->gatewayApiPort;
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
 
-		$response = $this->curl("http://$ip:$port/api/v0/id");
-		$data = json_decode($response, TRUE);
+        if ($data != "") {
+            $boundary = "a831rwxi1a3gzaorw1w2z49dlsor";
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary"));
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, "--$boundary\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--$boundary\r\n");
+        }
 
-		return $data;
-	}
+        $output = curl_exec($ch);
+        curl_close($ch);
 
-	private function curl ($url, $data = "") {
-		$ch = curl_init();
-
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-		curl_setopt($ch, CURLOPT_HEADER, 0);
-		curl_setopt($ch, CURLOPT_BINARYTRANSFER,1);
-		 
-		if ($data != "") {
-			curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data; boundary=a831rwxi1a3gzaorw1w2z49dlsor')); 
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, "--a831rwxi1a3gzaorw1w2z49dlsor\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--a831rwxi1a3gzaorw1w2z49dlsor\r\n");
-		}
-
-		$output = curl_exec($ch);
-
-		if ($output == FALSE) {
-			//todo: when ipfs doesn't answer
-		}		 
-		curl_close($ch);
- 
-
-		return $output;
-	}
+        return $output;
+    }
 }
 
 
