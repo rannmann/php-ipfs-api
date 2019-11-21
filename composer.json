@@ -1,9 +1,9 @@
 {
-    "name": "cloutier/php-ipfs-api",
+    "name": "rannmann/php-ipfs-api",
     "type": "library",
     "description": "A client library for the IPFS API",
     "keywords": ["ipfs"],
-    "homepage": "https://github.com/cloutier/php-ipfs-api",
+    "homepage": "https://github.com/rannmann/php-ipfs-api",
     "license": "MIT",
     "authors": [
         {
@@ -11,7 +11,11 @@
             "email": "vincent@cloutier.co",
             "homepage": "http://vincent.cloutier.co",
             "role": "Developer"
-        }
+        },
+        {
+            "name": "Jake Forrester",
+            "role": "Developer"
+        },
     ],
     "require": {
         "php": ">=5.3.0",
@@ -19,7 +23,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Cloutier\\PhpIpfsApi\\": "src/"
+            "rannmann\\PhpIpfsApi\\": "src/"
         }
     }
 }
