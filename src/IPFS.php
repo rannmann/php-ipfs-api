@@ -4,7 +4,7 @@
 	See the LICENSE file for more information.
 */
 
-namespace Cloutier\PhpIpfsApi;
+namespace rannmann\PhpIpfsApi;
 
 class IPFS {
 	private $gatewayIP;
