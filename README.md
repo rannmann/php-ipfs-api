@@ -1,9 +1,12 @@
 IPFS API wrapper library in PHP
 ======================================
 
-![](https://ipfs.io/ipfs/QmQJ68PFMDdAsgCZvA1UVzzn18asVcf7HVvCDgpjiSCAse)
-
 > A client library for the IPFS API.
+
+-----
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b402bd7a7ae4452db5262493413a933d)](https://www.codacy.com/manual/rannmann/php-ipfs-api?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=rannmann/php-ipfs-api&amp;utm_campaign=Badge_Grade)
+[![CodeFactor](https://www.codefactor.io/repository/github/rannmann/php-ipfs-api/badge/master)](https://www.codefactor.io/repository/github/rannmann/php-ipfs-api/overview/master)
+
 
 # Usage
 
@@ -23,7 +26,6 @@ use Cloutier\PhpIpfsApi\IPFS;
 // connect to ipfs daemon API server
 $ipfs = new IPFS("localhost", "8080", "5001"); // leaving out the arguments will default to these values
 ```
-
 
 
 ## API
