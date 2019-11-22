@@ -6,6 +6,8 @@
 
 namespace rannmann\PhpIpfsApi;
 
+use Exception;
+
 /**
  * Class IPFS
  * @package rannmann\PhpIpfsApi
@@ -24,6 +26,13 @@ class IPFS
      * @var string
      */
     private $gatewayApiPort;
+    /**
+     * @var resource
+     */
+    private $curl;
+
+    const ERROR_BAD_PROGRAMMER = 1;
+    const ERROR_EMPTY_RESPONSE = 2;
 
     /**
      * IPFS constructor.
@@ -42,7 +51,8 @@ class IPFS
      * Retrieves the contents of a single hash
      *
      * @param string $hash
-     * @return bool|string
+     * @return string
+     * @throws Exception
      */
     public function cat($hash)
     {
@@ -54,48 +64,70 @@ class IPFS
      *
      * @param $content
      * @return mixed
+     * @throws Exception
      */
     public function add($content)
     {
-        $req = $this->curl($this->getApiUrl() . "/add?stream-channels=true", $content);
-        if ($req !== false) {
-            $req = json_decode($req, true);
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/add?stream-channels=true", $content)
+        );
+        if ($response) {
+            $response = $response['Hash'];
         }
+        return $response;
+    }
 
-        return $req['Hash'];
+    /**
+     * @param string $filePath
+     * @param array $params
+     * @return mixed|null
+     * @throws Exception
+     */
+    public function addFromPath(string $filePath, array $params = [])
+    {
+        $response = $this->safeDecode(
+            $this->curlFile($this->getApiUrl() . "/add", $filePath, $params)
+        );
+        if ($response) {
+            $response = $response['Hash'];
+        }
+        return $response;
     }
 
     /**
      * Returns the node structure of a hash
      *
      * @param string $hash
-     * @return mixed False on failure
+     * @return mixed
+     * @throws Exception
      */
     public function ls($hash)
     {
-        $req = $this->curl($this->getApiUrl() . "/ls/$hash");
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/ls/$hash")
+        );
 
-        if ($req !== false) {
-            $req = json_decode($req, true);
-            return $req['Objects'][0]['Links'];
+        if ($response) {
+            $response = $response['Objects'][0]['Links'];
         }
-
-        return false;
+        return $response;
     }
 
     /**
      * @param string $hash
      * @return mixed
+     * @throws Exception
      */
     public function size($hash)
     {
-        $req = $this->curl($this->getApiUrl() . "/object/stat/$hash");
-        if ($req !== false) {
-            $req = json_decode($req, true);
-            return $req['CumulativeSize'];
-        }
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/object/stat/$hash")
+        );
 
-        return false;
+        if ($response) {
+            $response = $response['CumulativeSize'];
+        }
+        return $response;
     }
 
     /**
@@ -103,58 +135,58 @@ class IPFS
      *
      * @param string $hash
      * @return mixed
+     * @throws Exception
      */
-    public function pinAdd($hash)
+    public function pinAdd($hash): ?array
     {
-        $req = $this->curl($this->getApiUrl() . "/pin/add/$hash");
-        if ($req !== false) {
-            $req = json_decode($req, true);
-        }
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/pin/add/$hash")
+        );
 
-        return $req;
+        return $response;
     }
 
     /**
      * Unpin a hash
      *
      * @param string $hash
-     * @return mixed
+     * @return array|null
+     * @throws Exception
      */
-    public function pinRm($hash)
+    public function pinRm($hash): ?array
     {
-        $req = $this->curl($this->getApiUrl() . "/pin/rm/$hash");
-        if ($req !== false) {
-            $req = json_decode($req, true);
-        }
-
-        return $req;
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/pin/rm/$hash")
+        );
+        return $response;
     }
 
     /**
      * @return mixed
+     * @throws Exception
      */
     public function version()
     {
-        $req = $this->curl($this->getApiUrl() . "/version");
-        if ($req !== false) {
-            $req = json_decode($req, true);
-            return $req['Version'];
-        }
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/version")
+        );
 
-        return false;
+        if ($response) {
+            $response = $response['Version'];
+        }
+        return $response;
     }
 
     /**
-     * @return mixed
+     * @return array|null
+     * @throws Exception
      */
-    public function id()
+    public function id(): ?array
     {
-        $req = $this->curl($this->getApiUrl() . "/id");
-        if ($req !== false) {
-            $req = json_decode($req, true);
-            return $req['Version'];
-        }
-        return $req;
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/id")
+        );
+        return $response;
     }
 
     /**
@@ -162,7 +194,7 @@ class IPFS
      *
      * @return string
      */
-    private function getApiUrl()
+    private function getApiUrl(): string
     {
         return "http://{$this->gatewayIP}:{$this->gatewayPort}/api/v0";
     }
@@ -172,35 +204,132 @@ class IPFS
      *
      * @return string
      */
-    private function getIpfsUrl()
+    private function getIpfsUrl(): string
     {
         return "http://{$this->gatewayIP}:{$this->gatewayApiPort}/ipfs";
     }
 
     /**
-     * @param $url
-     * @param string $data
-     * @return false|string False on failure
+     * @param $input
+     * @return array|null
      */
-    private function curl($url, $data = "")
+    private function safeDecode($input): ?array
     {
-        $ch = curl_init();
+        if ($input === null || $input === false) {
+            return null;
+        }
+        return json_decode($input, true);
+    }
 
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+    private function resetCurl()
+    {
+        if (empty($this->curl)) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
+            $this->curl = $ch;
+        }
+        // Shared resets
+        curl_setopt($this->curl, CURLOPT_POST, 0); // We'll set this to 1 if we actually post data.
+    }
 
-        if ($data != "") {
-            $boundary = "a831rwxi1a3gzaorw1w2z49dlsor";
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary"));
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, "--$boundary\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--$boundary\r\n");
+    /**
+     * @param string $url
+     * @param string|null $data
+     * @param string|null $filePath
+     * @param array $params GET parameters
+     * @return string
+     * @throws Exception
+     */
+    private function executeCurl(string $url, ?string $data = null, ?string $filePath = null, $params = []): string
+    {
+        if ($data && $filePath) {
+            throw new Exception(
+                "Cannot send both POST data and a file at the same time",
+                self::ERROR_BAD_PROGRAMMER
+            );
         }
 
-        $output = curl_exec($ch);
-        curl_close($ch);
+        $queryString = $params ? '?' . http_build_query($params) : '';
+        $url .= $queryString;
+        curl_setopt($this->curl, CURLOPT_URL, $url);
+
+        if ($data) {
+            // Handle raw data, such as strings
+            $boundary = "a831rwxi1a3gzaorw1w2z49dlsor";
+            curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary"));
+            curl_setopt($this->curl, CURLOPT_POST, 1);
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, "--$boundary\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--$boundary\r\n");
+        } elseif ($filePath) {
+            // Handle file paths instead
+            curl_setopt($this->curl, CURLOPT_POST, 1);
+            $cfile = curl_file_create($filePath, 'application/octet-stream', basename($filePath));
+            $postFields = ['file' => $cfile];
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postFields);
+        }
+
+        // See what IPFS says
+        $output = curl_exec($this->curl);
+
+        // Store this for later
+        $responseCode = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+
+        // Free up resources
+        curl_close($this->curl);
+        $this->curl = null;
+
+        // Handle any 400s or 500s
+        if ($responseCode >= 400 && $responseCode < 600) {
+            $data = @json_decode($output, true);
+            if (!$data AND json_last_error() != JSON_ERROR_NONE) {
+                throw new Exception(
+                    "IPFS returned response code $responseCode: " . substr($output, 0, 200),
+                    $responseCode
+                );
+            }
+            if (is_array($data)) {
+                if (isset($data['Code']) && isset($data['Message'])) {
+                    throw new Exception("IPFS Error {$data['Code']}: {$data['Message']}", $responseCode);
+                }
+            }
+        }
+
+        if ($output === false) {
+            // If we get no response and no 400-500 error, something really weird happened.
+            throw new Exception("IPFS Error: No Response", self::ERROR_EMPTY_RESPONSE);
+        }
+
+        return $output;
+    }
+
+    /**
+     * @param string $url
+     * @param string $data
+     * @param array $params GET parameters
+     * @return string
+     * @throws Exception
+     */
+    private function curl(string $url, string $data = "", array $params = []): string
+    {
+        $this->resetCurl();
+        $output = $this->executeCurl($url, $data, null, $params);
+
+        return $output;
+    }
+
+    /**
+     * @param string $url
+     * @param string $filePath or Directory path
+     * @param array $params GET parameters
+     * @return string
+     * @throws Exception
+     */
+    private function curlFile(string $url, string $filePath, array $params = []): string
+    {
+        $this->resetCurl();
+        $output = $this->executeCurl($url, null, $filePath, $params);
 
         return $output;
     }
