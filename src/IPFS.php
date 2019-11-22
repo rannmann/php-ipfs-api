@@ -1,7 +1,7 @@
 <?php
 /*
-	This code is licensed under the MIT license.
-	See the LICENSE file for more information.
+    This code is licensed under the MIT license.
+    See the LICENSE file for more information.
 */
 
 namespace rannmann\PhpIpfsApi;
@@ -10,6 +10,7 @@ use Exception;
 
 /**
  * Class IPFS
+ *
  * @package rannmann\PhpIpfsApi
  */
 class IPFS
@@ -31,18 +32,21 @@ class IPFS
      */
     private $curl;
 
+    protected $curlTimeout = 5;
+
     const ERROR_BAD_PROGRAMMER = 1;
     const ERROR_EMPTY_RESPONSE = 2;
 
     /**
      * IPFS constructor.
-     * @param string $ip
-     * @param int $port
-     * @param int $apiPort
+     *
+     * @param string $host
+     * @param int    $port
+     * @param int    $apiPort
      */
-    function __construct($ip = "localhost", $port = 8080, $apiPort = 5001)
+    function __construct($host = "localhost", $port = 8080, $apiPort = 5001)
     {
-        $this->gatewayIP = $ip;
+        $this->gatewayIP = $host;
         $this->gatewayPort = $port;
         $this->gatewayApiPort = $apiPort;
     }
@@ -50,7 +54,7 @@ class IPFS
     /**
      * Retrieves the contents of a single hash
      *
-     * @param string $hash
+     * @param  string $hash
      * @return string
      * @throws Exception
      */
@@ -62,7 +66,7 @@ class IPFS
     /**
      * Adds content to IPFS.
      *
-     * @param $content
+     * @param  $content
      * @return mixed
      * @throws Exception
      */
@@ -78,8 +82,8 @@ class IPFS
     }
 
     /**
-     * @param string $filePath
-     * @param array $params
+     * @param  string $filePath
+     * @param  array  $params
      * @return mixed|null
      * @throws Exception
      */
@@ -97,7 +101,7 @@ class IPFS
     /**
      * Returns the node structure of a hash
      *
-     * @param string $hash
+     * @param  string $hash
      * @return mixed
      * @throws Exception
      */
@@ -114,7 +118,7 @@ class IPFS
     }
 
     /**
-     * @param string $hash
+     * @param  string $hash
      * @return mixed
      * @throws Exception
      */
@@ -133,7 +137,7 @@ class IPFS
     /**
      * Pin a hash
      *
-     * @param string $hash
+     * @param  string $hash
      * @return mixed
      * @throws Exception
      */
@@ -149,7 +153,7 @@ class IPFS
     /**
      * Unpin a hash
      *
-     * @param string $hash
+     * @param  string $hash
      * @return array|null
      * @throws Exception
      */
@@ -210,7 +214,7 @@ class IPFS
     }
 
     /**
-     * @param $input
+     * @param  $input
      * @return array|null
      */
     private function safeDecode($input): ?array
@@ -226,7 +230,7 @@ class IPFS
         if (empty($this->curl)) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $this->getCurlTimeout());
             curl_setopt($ch, CURLOPT_HEADER, 0);
             curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
             $this->curl = $ch;
@@ -236,10 +240,10 @@ class IPFS
     }
 
     /**
-     * @param string $url
-     * @param string|null $data
-     * @param string|null $filePath
-     * @param array $params GET parameters
+     * @param  string      $url
+     * @param  string|null $data
+     * @param  string|null $filePath
+     * @param  array       $params   GET parameters
      * @return string
      * @throws Exception
      */
@@ -305,9 +309,9 @@ class IPFS
     }
 
     /**
-     * @param string $url
-     * @param string $data
-     * @param array $params GET parameters
+     * @param  string $url
+     * @param  string $data
+     * @param  array  $params GET parameters
      * @return string
      * @throws Exception
      */
@@ -320,9 +324,9 @@ class IPFS
     }
 
     /**
-     * @param string $url
-     * @param string $filePath or Directory path
-     * @param array $params GET parameters
+     * @param  string $url
+     * @param  string $filePath or Directory path
+     * @param  array  $params   GET parameters
      * @return string
      * @throws Exception
      */
@@ -332,6 +336,22 @@ class IPFS
         $output = $this->executeCurl($url, null, $filePath, $params);
 
         return $output;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCurlTimeout(): int
+    {
+        return $this->curlTimeout;
+    }
+
+    /**
+     * @param int $curlTimeout
+     */
+    public function setCurlTimeout(int $curlTimeout): void
+    {
+        $this->curlTimeout = $curlTimeout;
     }
 }
 
