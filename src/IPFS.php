@@ -243,15 +243,40 @@ class IPFS
     private function resetCurl()
     {
         if (empty($this->curl)) {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_TIMEOUT, $this->getCurlTimeout());
-            curl_setopt($ch, CURLOPT_HEADER, 0);
-            curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
-            $this->curl = $ch;
+            $this->curl = curl_init();
+            curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($this->curl, CURLOPT_TIMEOUT, $this->getCurlTimeout());
+            curl_setopt($this->curl, CURLOPT_HEADER, 0);
+            curl_setopt($this->curl, CURLOPT_BINARYTRANSFER, 1);
         }
         // Shared resets
         curl_setopt($this->curl, CURLOPT_POST, 0); // We'll set this to 1 if we actually post data.
+    }
+
+    /**
+     * Sets up CURL to send raw data as the IPFS file
+     *
+     * @param string $data
+     */
+    private function setCurlData(string $data): void
+    {
+        $boundary = "a831rwxi1a3gzaorw1w2z49dlsor";
+        curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary"));
+        curl_setopt($this->curl, CURLOPT_POST, 1);
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, "--$boundary\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--$boundary\r\n");
+    }
+
+    /**
+     * Sets up CURL to send the file data from source as IPFS file
+     *
+     * @param string $filePath
+     */
+    private function setCurlFile(string $filePath): void
+    {
+        curl_setopt($this->curl, CURLOPT_POST, 1);
+        $cfile = curl_file_create(realpath($filePath), 'application/octet-stream', basename($filePath));
+        $postFields = ['file' => $cfile];
+        curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postFields);
     }
 
     /**
@@ -272,21 +297,12 @@ class IPFS
         }
 
         $queryString = $params ? '?' . http_build_query($params) : '';
-        $url .= $queryString;
-        curl_setopt($this->curl, CURLOPT_URL, $url);
+        curl_setopt($this->curl, CURLOPT_URL, $url . $queryString);
 
         if ($data) {
-            // Handle raw data, such as strings
-            $boundary = "a831rwxi1a3gzaorw1w2z49dlsor";
-            curl_setopt($this->curl, CURLOPT_HTTPHEADER, array("Content-Type: multipart/form-data; boundary=$boundary"));
-            curl_setopt($this->curl, CURLOPT_POST, 1);
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, "--$boundary\r\nContent-Type: application/octet-stream\r\nContent-Disposition: file; \r\n\r\n" . $data . "\r\n--$boundary\r\n");
+            $this->setCurlData($data);
         } elseif ($filePath) {
-            // Handle file paths instead
-            curl_setopt($this->curl, CURLOPT_POST, 1);
-            $cfile = curl_file_create(realpath($filePath), 'application/octet-stream', basename($filePath));
-            $postFields = ['file' => $cfile];
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postFields);
+            $this->setCurlFile($filePath);
         }
 
         // See what IPFS says
