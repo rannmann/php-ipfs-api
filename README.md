@@ -1,7 +1,9 @@
 IPFS API wrapper library in PHP
 ======================================
 
-> A client library for the IPFS API.
+A client library for the IPFS API.
+
+This is a complete from-the-ground-up rewrite of cloutier/php-ipfs-api.
 
 -----
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b402bd7a7ae4452db5262493413a933d)](https://www.codacy.com/manual/rannmann/php-ipfs-api?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=rannmann/php-ipfs-api&amp;utm_campaign=Badge_Grade)
@@ -12,19 +14,18 @@ IPFS API wrapper library in PHP
 
 ## Installing 
 
-This library requires the cURL module:
+This library requires PHP 7.3 and the curl and json extensions.
 
 ```bash
-$ sudo apt-get install php5-curl
 $ composer require rannmann/php-ipfs-api
 $ composer install
 ```
 
 ```PHP
-use Cloutier\PhpIpfsApi\IPFS;
+use rannmann\PhpIpfsApi\IPFS;
 
 // connect to ipfs daemon API server
-$ipfs = new IPFS("localhost", "8080", "5001"); // leaving out the arguments will default to these values
+$ipfs = new IPFS("localhost", 8080, 5001); // leaving out the arguments will default to these values
 ```
 
 
@@ -64,12 +65,12 @@ Gets the node structure of a hash.
 
 **Usage**
 ```PHP
-$obj = $ipfs->ls($hash);
+$nodes = $ipfs->ls($hash);
 
-foreach ($obj as $e) {
-	echo $e['Hash'];
-	echo $e['Size'];
-	echo $e['Name'];
+foreach ($nodes as $node) {
+	echo $node['Hash'];
+	echo $node['Size'];
+	echo $node['Name'];
 }
 ```
 
@@ -93,7 +94,7 @@ $ipfs->pinAdd($hash);
 $ipfs->pinRm($hash);
 ```
 
-#### Pin
+#### ID
 
 Get information about your ipfs node.
 
@@ -106,8 +107,9 @@ print_r($ipfs->id());
 
 The MIT License (MIT)
 
-Copyright (c) 2015-2016 Vincent Cloutier  
-Copyright (c) 2016 S3r3nity Technologies 
+Copyright (c) 2019 Jake Forrester
+Copyright (c) 2016 S3r3nity Technologies
+Copyright (c) 2015-2016 Vincent Cloutier
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
