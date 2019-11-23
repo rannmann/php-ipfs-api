@@ -58,7 +58,7 @@ class IPFS
      * @return string
      * @throws Exception
      */
-    public function cat($hash)
+    public function get($hash)
     {
         return $this->curl($this->getIpfsUrl() . "/$hash");
     }
@@ -66,14 +66,16 @@ class IPFS
     /**
      * Adds content to IPFS.
      *
-     * @param  $content
-     * @return mixed
+     * @param string $content
+     * @param array $params
+     * @link https://docs.ipfs.io/reference/api/http/#api-v0-add Available Parameters
+     * @return string|null
      * @throws Exception
      */
-    public function add($content)
+    public function add(string $content, array $params = []): ?string
     {
         $response = $this->safeDecode(
-            $this->curl($this->getApiUrl() . "/add?stream-channels=true", $content)
+            $this->curl($this->getApiUrl() . "/add", $content, $params)
         );
         if ($response) {
             $response = $response['Hash'];
@@ -84,6 +86,7 @@ class IPFS
     /**
      * @param  string $filePath
      * @param  array  $params
+     * @link https://docs.ipfs.io/reference/api/http/#api-v0-add Available Parameters
      * @return mixed|null
      * @throws Exception
      */
@@ -102,7 +105,7 @@ class IPFS
      * Returns the node structure of a hash
      *
      * @param  string $hash
-     * @return mixed
+     * @return array|null
      * @throws Exception
      */
     public function ls($hash)
@@ -119,10 +122,10 @@ class IPFS
 
     /**
      * @param  string $hash
-     * @return mixed
+     * @return int|null
      * @throws Exception
      */
-    public function size($hash)
+    public function size($hash): ?int
     {
         $response = $this->safeDecode(
             $this->curl($this->getApiUrl() . "/object/stat/$hash")
@@ -138,7 +141,7 @@ class IPFS
      * Pin a hash
      *
      * @param  string $hash
-     * @return mixed
+     * @return array|null   Array with a list of all pinned items
      * @throws Exception
      */
     public function pinAdd($hash): ?array
@@ -146,6 +149,10 @@ class IPFS
         $response = $this->safeDecode(
             $this->curl($this->getApiUrl() . "/pin/add/$hash")
         );
+
+        if ($response) {
+            $response = $response['Pins'];
+        }
 
         return $response;
     }
@@ -162,6 +169,11 @@ class IPFS
         $response = $this->safeDecode(
             $this->curl($this->getApiUrl() . "/pin/rm/$hash")
         );
+
+        if ($response) {
+            $response = $response['Pins'];
+        }
+
         return $response;
     }
 
@@ -182,6 +194,9 @@ class IPFS
     }
 
     /**
+     * Show IPFS node id info
+     *
+     * @link https://docs.ipfs.io/reference/api/http/#api-v0-id
      * @return array|null
      * @throws Exception
      */
@@ -200,7 +215,7 @@ class IPFS
      */
     private function getApiUrl(): string
     {
-        return "http://{$this->gatewayIP}:{$this->gatewayPort}/api/v0";
+        return "http://{$this->gatewayIP}:{$this->gatewayApiPort}/api/v0";
     }
 
     /**
@@ -210,7 +225,7 @@ class IPFS
      */
     private function getIpfsUrl(): string
     {
-        return "http://{$this->gatewayIP}:{$this->gatewayApiPort}/ipfs";
+        return "http://{$this->gatewayIP}:{$this->gatewayPort}/ipfs";
     }
 
     /**
@@ -269,7 +284,7 @@ class IPFS
         } elseif ($filePath) {
             // Handle file paths instead
             curl_setopt($this->curl, CURLOPT_POST, 1);
-            $cfile = curl_file_create($filePath, 'application/octet-stream', basename($filePath));
+            $cfile = curl_file_create(realpath($filePath), 'application/octet-stream', basename($filePath));
             $postFields = ['file' => $cfile];
             curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postFields);
         }
@@ -284,6 +299,18 @@ class IPFS
         curl_close($this->curl);
         $this->curl = null;
 
+        $this->handleCurlResponse($output, $responseCode);
+
+        return $output;
+    }
+
+    /**
+     * @param $output
+     * @param $responseCode
+     * @throws Exception
+     */
+    private function handleCurlResponse($output, $responseCode): void
+    {
         // Handle any 400s or 500s
         if ($responseCode >= 400 && $responseCode < 600) {
             $data = @json_decode($output, true);
@@ -304,8 +331,6 @@ class IPFS
             // If we get no response and no 400-500 error, something really weird happened.
             throw new Exception("IPFS Error: No Response", self::ERROR_EMPTY_RESPONSE);
         }
-
-        return $output;
     }
 
     /**
@@ -332,6 +357,11 @@ class IPFS
      */
     private function curlFile(string $url, string $filePath, array $params = []): string
     {
+        if (!file_exists($filePath)) {
+            throw new Exception(
+                "Upload file not found"
+            );
+        }
         $this->resetCurl();
         $output = $this->executeCurl($url, null, $filePath, $params);
 

@@ -40,15 +40,23 @@ Adds content to IPFS.
 $hash = $ipfs->add("Hello world");
 ```
 
+#### addFromPath
+
+Adds content to IPFS from a filename (helper method)
+
+**Usage**
+```PHP
+$hash = $ipfs->addFromPath("myFile.txt");
+```
 
 
-#### cat
+#### get
 
 Retrieves the contents of a single hash.
 
 **Usage**
 ```PHP
-$ipfs->cat($hash);
+$ipfs->get($hash);
 ```
 
 #### ls
