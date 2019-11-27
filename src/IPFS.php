@@ -102,6 +102,24 @@ class IPFS
     }
 
     /**
+     * @param string $fileUrl
+     * @param array $params
+     * @return mixed|null
+     * @throws Exception
+     */
+    public function addFromUrl(string $fileUrl, array $params = [])
+    {
+        $fileContents = file_get_contents($fileUrl);
+        $response = $this->safeDecode(
+            $this->curl($this->getApiUrl() . "/add", $fileContents, $params)
+        );
+        if ($response) {
+            $response = $response['Hash'];
+        }
+        return $response;
+    }
+
+    /**
      * Returns the node structure of a hash
      *
      * @param  string $hash

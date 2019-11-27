@@ -56,6 +56,13 @@ class IPFSTest extends TestCase
         );
     }
 
+    public function test_addFromUrl(): void
+    {
+        $hash = $this->ipfs->addFromUrl('https://i.imgur.com/QjXJYZk.png');
+        $this->assertTrue(is_string($hash), "Adding image from URL resulted in a string hash");
+        $this->assertTrue(strlen($hash) >= 10, "Adding image from URL resulted in hash with at least 10 length");
+    }
+
     public function test_get(): void
     {
         $hash = $this->ipfs->add($this->getTestString(), ['pin' => false]);

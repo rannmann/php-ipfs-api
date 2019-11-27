@@ -49,6 +49,15 @@ Adds content to IPFS from a filename (helper method)
 $hash = $ipfs->addFromPath("myFile.txt");
 ```
 
+#### addFromUrl
+
+Adds content ot IPFS from a web URL (helper method)
+
+**Usage**
+```PHP
+$hash = $ipfs->addFromUrl('https://mysite.com/img.png');
+```
+
 
 #### get
 
