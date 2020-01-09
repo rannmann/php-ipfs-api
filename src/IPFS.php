@@ -110,6 +110,9 @@ class IPFS
     public function addFromUrl(string $fileUrl, array $params = [])
     {
         $fileContents = file_get_contents($fileUrl);
+        if ($fileContents === false) {
+            throw new Exception("File content unable to be retrieved");
+        }
         $response = $this->safeDecode(
             $this->curl($this->getApiUrl() . "/add", $fileContents, $params)
         );
